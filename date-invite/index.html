@@ -80,7 +80,7 @@
         <form id="dateForm" class="date-panel">
           <label for="dateInput">کی بریم بیرون؟ 📅</label>
           <input id="dateInput" type="date" required>
-          <button class="primary" type="submit">ثبت تاریخ 💖</button>
+          <button id="submitDate" class="primary" type="submit">ثبت تاریخ و ارسال خودکار 💌</button>
         </form>
       </div>
 
@@ -88,9 +88,10 @@
         <div class="emoji">🤭</div>
         <h1>پس قرارمون قطعی شد! 💕</h1>
         <div id="chosen" class="chosen"></div>
-        <button id="sendSms" class="primary" type="button">ارسال تاریخ با پیامک 💌</button>
+        <p id="deliveryStatus" class="note" role="status" aria-live="polite"></p>
+        <button id="sendSms" class="secondary hidden" type="button">ارسال دستی پیامک (در صورت نیاز) 💌</button>
         <button id="restart" class="secondary" type="button">از اول 😄</button>
-        <p class="note">با زدن دکمه بالا، برنامه پیامک گوشی باز می‌شود و متن آماده است؛ فقط ارسال را بزن.</p>
+        <p class="note">تاریخ بعد از ثبت، خودکار برای طرف مقابل ارسال می‌شود؛ فقط در صورت خطا دکمه ارسال دستی نمایش داده می‌شود.</p>
       </div>
     </section>
   </main>
@@ -109,6 +110,8 @@
   const input = document.getElementById('dateInput');
   const chosen = document.getElementById('chosen');
   const sendSms = document.getElementById('sendSms');
+  const submitDate = document.getElementById('submitDate');
+  const deliveryStatus = document.getElementById('deliveryStatus');
   const restart = document.getElementById('restart');
   let clicks = 0;
   let selectedDate = '';
@@ -157,7 +160,7 @@
     input.focus();
   });
 
-  form.addEventListener('submit', e => {
+  form.addEventListener('submit', async e => {
     e.preventDefault();
     if (!input.value) return;
     selectedDate = input.value;
@@ -172,6 +175,35 @@
     chosen.innerHTML = '📅 ' + persian + '<br><span style="font-weight:400;color:#7d627f">(' + gregorian + ')</span>';
     dateScreen.classList.add('hidden');
     done.classList.remove('hidden');
+    deliveryStatus.textContent = 'در حال ارسال خودکار تاریخ... لطفاً صبر کن 💌';
+    deliveryStatus.style.color = '#7d627f';
+    sendSms.classList.add('hidden');
+    submitDate.disabled = true;
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 65000);
+      let response;
+      try {
+        response = await fetch('https://amin-date-invite-sms.onrender.com/api/date', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ date: selectedDate }),
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timer);
+      }
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.ok) throw new Error(result.error || 'ارسال خودکار ممکن نشد.');
+      deliveryStatus.style.color = '#217148';
+      deliveryStatus.textContent = 'درخواست ارسال پیامک به سامانه ثبت شد ✅';
+    } catch (error) {
+      deliveryStatus.style.color = '#a83558';
+      deliveryStatus.textContent = 'ارسال خودکار انجام نشد. ' + (error.message || 'لطفاً دوباره تلاش کن.');
+      sendSms.classList.remove('hidden');
+    } finally {
+      submitDate.disabled = false;
+    }
   });
 
   sendSms.addEventListener('click', () => {
@@ -188,7 +220,7 @@
   });
 
   restart.addEventListener('click', () => {
-    clicks = 0; selectedDate = ''; input.value = '';
+    clicks = 0; selectedDate = ''; input.value = ''; deliveryStatus.textContent = '';
     done.classList.add('hidden'); dateScreen.classList.add('hidden'); ask.classList.remove('hidden');
     face.textContent = '🥹'; hint.textContent = 'فقط یه سؤال ساده‌ست... جواب درست هم فقط یکیه 😌💕';
     yes.removeAttribute('style'); yes.textContent = 'آره 😍';
