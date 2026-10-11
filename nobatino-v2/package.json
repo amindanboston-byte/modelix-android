@@ -1,0 +1,12 @@
+{
+  "name": "nobatino-multi-tenant-api",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node nobatino-v2/server.mjs"
+  },
+  "dependencies": {
+    "pg": "^8.13.0"
+  }
+}
