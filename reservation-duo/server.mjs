@@ -1,10 +1,33 @@
 import http from 'node:http';
 import crypto from 'node:crypto';
 import {Pool} from 'pg';
+const fs = await import('node:fs');
+const demoPath=process.env.STORE_FILE||'/tmp/reservations.json';
+let demo=[];
+try{demo=JSON.parse(fs.readFileSync(demoPath,'utf8'))}catch{}
+const saveDemo=()=>{const tmp=demoPath+'.tmp';fs.writeFileSync(tmp,JSON.stringify(demo));fs.renameSync(tmp,demoPath)};
+const fakePool={query:async(sql,a=[])=>{
+ if(sql.startsWith('CREATE TABLE'))return {rows:[],rowCount:0};
+ if(sql.startsWith('SELECT date::text')){
+  const rows=demo.filter(x=>x.date>=a[0]&&x.date<=a[1]).sort((x,y)=>(x.date+x.time).localeCompare(y.date+y.time));
+  return {rows:rows.map(x=>({date:x.date,time:x.time,kind:x.kind,name:x.customer_name,phone:x.phone,note:x.note,created_at:x.created_at})),rowCount:rows.length};
+ }
+ if(sql.startsWith('INSERT INTO appointments')){
+  const [date,time,name,phone,note]=a;
+  if(demo.some(x=>x.date===date&&x.time===time))return {rows:[],rowCount:0};
+  demo.push({date,time,kind:sql.includes("'booked'")?'booked':'blocked',customer_name:name||null,phone:phone||null,note:note||null,created_at:new Date().toISOString()});saveDemo();
+  return {rows:[{time}],rowCount:1};
+ }
+ if(sql.startsWith('DELETE FROM appointments')){
+  const ix=demo.findIndex(x=>x.date===a[0]&&x.time===a[1]);if(ix<0)return {rows:[],rowCount:0};
+  const removed=demo.splice(ix,1)[0];saveDemo();return {rows:[{kind:removed.kind}],rowCount:1};
+ }
+ throw Error('Unsupported query');
+}};
 const PORT=Number(process.env.PORT||3000),HOURS=Array.from({length:13},(_,i)=>String(i+9).padStart(2,'0')+':00');
 const DB=process.env.DATABASE_URL,ADMIN_USER=process.env.ADMIN_USER||'amin_orazi',ADMIN_HASH=process.env.ADMIN_PASSWORD_HASH,SECRET=process.env.AUTH_SECRET;
-if(!DB||!ADMIN_HASH||!SECRET)throw Error('Missing server secrets');
-const pool=new Pool({connectionString:DB,ssl:DB.includes('localhost')?false:{rejectUnauthorized:false},max:5}),rate=new Map();
+if(!ADMIN_HASH||!SECRET)throw Error('Missing server secrets');
+const pool=DB?new Pool({connectionString:DB,ssl:DB.includes('localhost')?false:{rejectUnauthorized:false},max:5}):fakePool,rate=new Map();
 await pool.query("CREATE TABLE IF NOT EXISTS appointments (date DATE NOT NULL, time VARCHAR(5) NOT NULL, kind VARCHAR(8) NOT NULL CHECK(kind IN ('booked','blocked')), customer_name VARCHAR(90), phone VARCHAR(15), note VARCHAR(300), created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), PRIMARY KEY(date,time))");
 const json=(res,code,obj)=>{res.writeHead(code,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'Content-Type,Authorization','Access-Control-Allow-Methods':'GET,POST,OPTIONS','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(obj))};
 const body=req=>new Promise((resolve,reject)=>{let s='';req.on('data',x=>{s+=x;if(s.length>10000){reject(Error('LARGE'));req.destroy()}});req.on('end',()=>{try{resolve(JSON.parse(s||'{}'))}catch{reject(Error('BAD_JSON'))}});req.on('error',reject)});
