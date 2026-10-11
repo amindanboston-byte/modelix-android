@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>نوبتینو | سامانه رزرو</title>
+<style>
+:root{--primary:#db665c;--soft:#fff2ed;--dark:#302d44;--bg:#fff9f7;--green:#177b62;--red:#c7585e;--border:#f0dcd6;--text:#302b33;--muted:#867b81}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px Tahoma,Arial,sans-serif}
+body.admin{--primary:#7359d9;--soft:#f0ebff;--bg:#f7f5fe;--border:#e8e0ff;--text:#28243f;--muted:#817a98}
+header{background:linear-gradient(115deg,#f28b72,#d75b65);color:white;padding:24px 19px 34px;border-radius:0 0 30px 30px;box-shadow:0 12px 30px #ab4b4b2b}
+.admin header{background:linear-gradient(115deg,#6551bc,#342961)}
+main{max-width:680px;margin:0 auto;padding-bottom:80px}
+header .head{max-width:646px;margin:auto;display:flex;justify-content:space-between;align-items:center}
+h1{font-size:25px;margin:0 0 9px}header p{opacity:.89;margin:4px 0;line-height:1.8}
+.tag{background:#ffffff2a;border:1px solid #ffffff50;padding:10px;border-radius:14px;font-size:11px}
+section.card{margin:15px 15px 0;padding:20px;border-radius:22px;background:white;border:1px solid var(--border);box-shadow:0 10px 25px #31223308}
+h2{font-size:18px;margin:0 0 14px}p.help{color:var(--muted);font-size:12px;line-height:2;margin:8px 0 14px}
+label{display:block;font-weight:700;font-size:12px;margin:11px 0 6px}
+input,textarea{width:100%;padding:13px;border:1px solid var(--border);border-radius:13px;outline:0;background:#fffdfa;font:14px Tahoma,Arial,sans-serif;color:var(--text)}
+input:focus,textarea:focus{border-color:var(--primary);box-shadow:0 0 0 2px var(--soft)}
+button{border:0;border-radius:13px;background:var(--primary);color:white;padding:12px 15px;font:700 13px Tahoma,Arial;cursor:pointer}
+button.secondary{background:var(--soft);color:var(--primary);border:1px solid var(--border)}
+button:disabled{opacity:.55;cursor:default}
+button.small{padding:9px 11px;font-size:11px}
+button.block{width:100%;margin-top:14px}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.grid.week{grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
+.slot{background:#eaf7f2;color:#12715c;border:1px solid #bfe5d7;min-height:58px}
+.slot.booked{background:#ffeded;color:var(--red);border:1px solid #fbd5d5}
+.slot.closed,.slot.past{background:#f2f1f3;color:#9c929b;border:1px solid #e7e4e9}
+.slot.active,.date.active{background:var(--primary);color:white}
+.date{font-size:10px;padding:12px 0;white-space:nowrap;background:var(--soft);color:var(--primary)}
+.date b{display:block;font-size:16px;margin-top:4px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.notice{display:none;white-space:pre-line;line-height:1.9;margin:10px 15px;padding:13px;border-radius:13px;background:#ecf7f0;color:#1f7151}
+.notice.err{background:#fff0ef;color:#aa3e44}
+.item{padding:13px 2px;border-bottom:1px solid var(--border)}.item:last-child{border-bottom:0}
+.item b{display:block;margin-bottom:7px}.item span{color:var(--muted);font-size:11px;line-height:1.9}
+.pill{background:var(--soft);color:var(--primary);padding:8px 11px;border-radius:50px;font-size:12px}
+.hidden{display:none!important}
+.inline{display:flex;gap:7px;align-items:center}.inline>*{flex:1}
+details{margin-top:14px}summary{cursor:pointer;color:var(--primary);font-weight:bold;line-height:2}
+footer{text-align:center;color:var(--muted);font-size:11px;padding:25px 12px}
+code{direction:ltr;display:inline-block;background:var(--soft);padding:9px;border-radius:11px}
+</style></head><body>
+<header><div class="head"><div><h1 id="topTitle">نوبتینو</h1><p id="topSubtitle">نوبتت را سریع و ساده رزرو کن</p></div><div class="tag" id="topTag">رزرو آنلاین</div></div></header>
+<main><div id="msg" class="notice" role="status"></div>
+<div id="customer">
+<section id="findCard" class="card"><h2>پیدا کردن کسب‌وکار</h2><p class="help">کد ۸ کاراکتری را از کسب‌وکار بگیر و وارد کن.</p><label>کد رزرو</label><input id="code" dir="ltr" placeholder="مثلاً A4K9P2XY" maxlength="12"><button id="find" class="block">نمایش نوبت‌های آزاد</button></section>
+<section id="slotsCard" class="card hidden"><div class="row"><h2 id="businessName">ساعت‌های رزرو</h2><button class="secondary small" id="change">تغییر کد</button></div>
+<p class="help">هر ساعت فقط یک بار ثبت می‌شود. روزهای بسته و ساعت‌های پرشده قابل انتخاب نیستند.</p><div class="row"><button class="secondary small" id="prev">هفته قبل</button><span id="range">۷ روز آینده</span><button class="secondary small" id="next">هفته بعد</button></div>
+<div id="dates" class="grid week" style="margin-top:14px"></div><h2 style="margin-top:21px">ساعت‌های روز</h2><div id="slots" class="grid"></div><button class="secondary block" id="refresh">به‌روزرسانی ساعت‌ها</button></section>
+<section id="formCard" class="card hidden"><h2>تکمیل رزرو</h2><p id="selected" class="pill"></p><label>نام و نام خانوادگی</label><input id="fullName" maxlength="90" placeholder="نام شما"><label>شماره همراه</label><input id="phone" maxlength="15" inputmode="tel" dir="ltr" placeholder="0912xxxxxxx"><label>توضیحات اختیاری</label><textarea id="note" rows="2" maxlength="300"></textarea><button class="block" id="book">ثبت قطعی رزرو</button></section>
+</div>
+<div id="manager" class="hidden">
+<section id="authCard" class="card"><div class="row"><h2 id="authTitle">ورود مدیر</h2><button class="secondary small" id="authSwitch">ساخت حساب</button></div>
+<p class="help">هر کسب‌وکار حساب مستقل دارد و رزروهای دیگران را نمی‌بیند.</p>
+<div id="businessField" class="hidden"><label>نام کسب‌وکار</label><input id="businessInput" maxlength="70" placeholder="مثلاً کلینیک نمونه"></div>
+<label>نام کاربری (حروف انگلیسی)</label><input id="username" dir="ltr" autocapitalize="none" placeholder="my_business">
+<label>رمز عبور (حداقل ۸ کاراکتر)</label><input id="password" type="password" dir="ltr"><button class="block" id="login">ورود</button></section>
+<section id="dashboard" class="hidden">
+<section class="card"><div class="row"><div><h2 id="accountTitle"></h2><p class="help">کد رزرو اختصاصی شما</p><code id="myCode"></code></div><button class="secondary small" id="logout">خروج</button></div>
+<div class="inline" style="margin-top:14px"><button class="secondary" id="copyCode">کپی کد</button><button class="secondary" id="reload">تازه‌سازی</button></div></section>
+<section class="card"><h2>نوبت‌های ثبت‌شده</h2><p class="help">فقط رزروهای کسب‌وکار خودت نمایش داده می‌شوند.</p><div id="bookings">در حال دریافت...</div></section>
+<section class="card"><h2>مسدودکردن ساعت</h2><label>تاریخ میلادی (YYYY-MM-DD)</label><input id="blockDate" type="date"><label>ساعت (HH:00)</label><input id="blockTime" type="time" value="19:00" step="3600"><button id="block" class="block">بستن این ساعت</button></section>
+<section class="card"><details><summary>تنظیم روزها و ساعت‌های کاری هفته</summary><p class="help">برای هر روز، ساعت‌های فعال را انتخاب کن و ذخیره کن. تغییر ساعت کاری، رزروهای قبلی را حذف نمی‌کند.</p><div id="schedule"></div><button id="saveHours" class="block">ذخیره برنامه کاری</button></details></section>
+</section>
+</div>
+<section class="card"><div class="row"><b>وضعیت ارتباط</b><button id="test" class="secondary small">آزمایش</button></div><p class="help" id="connection">درخواست‌های رزرو و پنل از همین سایت امن ارسال می‌شوند.</p><details><summary>جزئیات عیب‌یابی</summary><p class="help" id="diagnosis"></p></details></section>
+<footer>نوبتینو · ناشر: محمد امین اوراضی زاده · نسخه تحت‌وب ۲.۲</footer></main>
+<script>
+(function(){'use strict';
+var E=function(id){return document.getElementById(id)},manager=location.pathname.startsWith('/admin'),api=location.origin+'/api/v2';
+document.body.classList.toggle('admin',manager);E('customer').classList.toggle('hidden',manager);E('manager').classList.toggle('hidden',!manager);
+if(manager){E('topTitle').textContent='نوبتینو مدیر';E('topSubtitle').textContent='مدیریت نوبت‌های کسب‌وکار';E('topTag').textContent='پنل اختصاصی'}
+var token=localStorage.getItem('nb22_token')||'',account=null,code=localStorage.getItem('nb22_code')||'',week=0,chosenDate='',selectedTime='',days=[],isRegister=false;
+function message(t,bad){E('msg').textContent=t;E('msg').classList.toggle('err',!!bad);E('msg').style.display='block';E('msg').scrollIntoView({block:'nearest',behavior:'smooth'})}
+function clearMsg(){E('msg').style.display='none'}
+function dateText(s){try{return new Intl.DateTimeFormat('fa-IR-u-ca-persian',{weekday:'short',month:'short',day:'numeric',timeZone:'Asia/Tehran'}).format(new Date(s+'T12:00:00Z'))}catch{return s}}
+async function req(path,options){var o=options||{},ctl=new AbortController(),timer=setTimeout(function(){ctl.abort()},50000);
+try{var r=await fetch(api+path,{method:o.method||'GET',body:o.body?JSON.stringify(o.body):undefined,signal:ctl.signal,cache:'no-store',headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})}}),raw=await r.text(),data;
+try{data=JSON.parse(raw)}catch{throw Error('SERVER_NON_JSON HTTP '+r.status+' '+raw.slice(0,80))}
+if(!r.ok){var ex=Error(data.error||('HTTP '+r.status));ex.status=r.status;throw ex}return data
+}catch(ex){if(ex.name==='AbortError')throw Error('TIMEOUT: server did not respond');throw ex}finally{clearTimeout(timer)}}
+function fail(ex){message('عملیات انجام نشد: '+(ex.message||ex)+'\nاگر اتصال برقرار نیست، همین آدرس را در مرورگر بررسی کن.',true)}
+E('test').onclick=async function(){E('connection').textContent='در حال آزمایش...';try{var h=await req('/health');E('connection').textContent='اتصال برقرار است · نسخه '+h.version+' · ذخیره‌سازی: '+(h.storage==='database'?'دائمی':'آزمایشی و موقت');E('diagnosis').textContent='Origin: '+location.origin+'\n'+JSON.stringify(h);message('سرور با موفقیت پاسخ داد')}catch(ex){E('connection').textContent='اتصال برقرار نشد: '+ex.message;E('diagnosis').textContent='Origin: '+location.origin+'\nError: '+ex.message;fail(ex)}};
+async function lookup(){clearMsg();code=E('code').value.trim().toUpperCase().replace(/[\s-]/g,'');if(code.length<6){message('کد رزرو معتبر نیست',true);return}E('find').disabled=true;try{var a=await req('/business?code='+encodeURIComponent(code));E('businessName').textContent=a.business.businessName;localStorage.setItem('nb22_code',code);E('findCard').classList.add('hidden');E('slotsCard').classList.remove('hidden');week=0;await loadSlots()}catch(ex){fail(ex)}finally{E('find').disabled=false}}
+E('find').onclick=lookup;E('code').value=code;E('change').onclick=function(){E('findCard').classList.remove('hidden');E('slotsCard').classList.add('hidden');E('formCard').classList.add('hidden')};
+async function loadSlots(){clearMsg();try{var d=new Date();d.setUTCHours(0,0,0,0);d.setUTCDate(d.getUTCDate()+week*7);var start=d.toISOString().slice(0,10),resp=await req('/slots?code='+encodeURIComponent(code)+'&start='+start+'&days=7');days=resp.days;chosenDate=days.some(function(x){return x.date===chosenDate})?chosenDate:days[0].date;E('range').textContent=dateText(days[0].date)+' تا '+dateText(days[days.length-1].date);
+E('dates').innerHTML='';days.forEach(function(x){var b=document.createElement('button');b.className='date'+(chosenDate===x.date?' active':'');b.textContent=dateText(x.date);b.onclick=function(){chosenDate=x.date;drawSlots();drawDates()};E('dates').appendChild(b)});drawSlots()}catch(ex){fail(ex)}}
+function drawDates(){Array.from(E('dates').children).forEach(function(b,i){b.classList.toggle('active',days[i].date===chosenDate)})}
+function drawSlots(){E('slots').innerHTML='';var d=days.find(function(x){return x.date===chosenDate});if(!d)return;d.slots.forEach(function(x){var b=document.createElement('button');b.className='slot '+(x.status==='free'?'':x.status);b.innerHTML=x.time+'<br><small>'+(x.status==='free'?'آزاد':x.status==='booked'?'پر شده':x.status==='blocked'?'مسدود':'بسته')+'</small>';b.disabled=x.status!=='free';b.onclick=function(){selectedTime=x.time;E('formCard').classList.remove('hidden');E('selected').textContent=dateText(chosenDate)+' - '+selectedTime;E('formCard').scrollIntoView({behavior:'smooth'})};E('slots').appendChild(b)})}
+E('prev').onclick=function(){if(week>0){week--;loadSlots()}};E('next').onclick=function(){if(week<7){week++;loadSlots()}};E('refresh').onclick=loadSlots;
+E('book').onclick=async function(){E('book').disabled=true;try{var x=await req('/book',{method:'POST',body:{code:code,date:chosenDate,time:selectedTime,name:E('fullName').value,phone:E('phone').value,note:E('note').value}});message('رزرو شما ثبت شد! '+x.booking.date+' ساعت '+x.booking.time);E('formCard').classList.add('hidden');await loadSlots()}catch(ex){fail(ex);if(ex.status===409){E('formCard').classList.add('hidden');await loadSlots()}}finally{E('book').disabled=false}};
+function showDashboard(a){account=a;E('authCard').classList.add('hidden');E('dashboard').classList.remove('hidden');E('accountTitle').textContent=a.businessName;E('myCode').textContent=a.code;drawSchedule();loadBookings()}
+function showAuth(){account=null;token='';localStorage.removeItem('nb22_token');E('authCard').classList.remove('hidden');E('dashboard').classList.add('hidden')}
+E('authSwitch').onclick=function(){isRegister=!isRegister;E('authTitle').textContent=isRegister?'ثبت‌نام کسب‌وکار':'ورود مدیر';E('businessField').classList.toggle('hidden',!isRegister);E('authSwitch').textContent=isRegister?'حساب دارم':'ساخت حساب';E('login').textContent=isRegister?'ثبت‌نام و دریافت کد':'ورود'};
+E('login').onclick=async function(){E('login').disabled=true;try{var data={username:E('username').value,password:E('password').value};if(isRegister)data.businessName=E('businessInput').value;var out=await req(isRegister?'/register':'/login',{method:'POST',body:data});token=out.token;localStorage.setItem('nb22_token',token);showDashboard(out.account);message('ورود موفق بود. کد اختصاصی رزرو را به مشتری‌ها بده.')}catch(ex){fail(ex)}finally{E('login').disabled=false}};
+E('logout').onclick=showAuth;E('copyCode').onclick=function(){if(navigator.clipboard){navigator.clipboard.writeText(account.code).then(function(){message('کد کپی شد')},function(){message('کد شما: '+account.code)})}else message('کد شما: '+account.code)};
+async function loadBookings(){try{var d=await req('/admin/bookings?days=28'),list=d.bookings;E('bookings').innerHTML='';if(!list.length){E('bookings').textContent='هنوز رزروی ثبت نشده است';return}list.forEach(function(x){var box=document.createElement('div');box.className='item';var b=document.createElement('b');b.textContent=dateText(x.date)+' · '+x.time+' · '+(x.kind==='blocked'?'مسدود':(x.name||'بدون نام'));box.appendChild(b);if(x.phone){var p=document.createElement('span');p.textContent=x.phone+(x.note?' · '+x.note:'');box.appendChild(p)}var act=document.createElement('button');act.className='secondary small';act.textContent='آزادکردن ساعت';act.style.marginRight='12px';act.onclick=async function(){if(!confirm('این نوبت حذف یا آزاد شود؟'))return;try{await req('/admin/release',{method:'POST',body:{date:x.date,time:x.time}});message('ساعت آزاد شد');await loadBookings()}catch(ex){fail(ex)}};box.appendChild(act);E('bookings').appendChild(box)})}catch(ex){if(ex.status===401){showAuth()}fail(ex)}}
+E('reload').onclick=loadBookings;E('block').onclick=async function(){try{await req('/admin/block',{method:'POST',body:{date:E('blockDate').value,time:E('blockTime').value}});message('ساعت بسته شد');loadBookings()}catch(ex){fail(ex)}};
+function drawSchedule(){E('schedule').innerHTML='';var names=['یکشنبه','دوشنبه','سه‌شنبه','چهارشنبه','پنجشنبه','جمعه','شنبه'];account.hours.forEach(function(times,idx){var d=document.createElement('details');var s=document.createElement('summary');s.textContent=names[idx]+' ('+times.length+' ساعت فعال)';d.appendChild(s);var div=document.createElement('div');div.className='grid';for(var i=8;i<=21;i++){var t=String(i).padStart(2,'0')+':00',label=document.createElement('label');label.style.fontSize='11px';var check=document.createElement('input');check.type='checkbox';check.style.width='auto';check.dataset.day=idx;check.value=t;check.checked=times.includes(t);label.appendChild(check);label.appendChild(document.createTextNode(' '+t));div.appendChild(label)}d.appendChild(div);E('schedule').appendChild(d)})}
+E('saveHours').onclick=async function(){var hours=Array.from({length:7},function(){return []});E('schedule').querySelectorAll('input[type=checkbox]:checked').forEach(function(x){hours[Number(x.dataset.day)].push(x.value)});try{var a=await req('/admin/schedule',{method:'PUT',body:{hours:hours}});account.hours=a.hours;message('ساعت‌های کاری ذخیره شد');drawSchedule()}catch(ex){fail(ex)}};
+if(manager&&token){req('/admin/me').then(function(a){showDashboard(a.account)},function(){showAuth()})}
+if(!manager&&code){E('code').value=code}
+E('test').click();
+})();
+</script></body></html>
